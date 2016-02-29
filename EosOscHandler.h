@@ -1,7 +1,12 @@
 #ifndef EosOscHandler_h
 #define EosOscHandler_h
 
-#include "OSCMessage.h"
+#include <OSCMessage.h>
+
+
+
+
+
 
 class EosOscHandler
 {

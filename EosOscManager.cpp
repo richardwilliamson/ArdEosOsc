@@ -1,24 +1,42 @@
-#include "EosOscManager.h"
-#include "setupManager.h"
+#include <EosOscManager.h>
+#include <BufferStore.h>
+
+//define static vars
+
+EosOscManager EosOscManager::manager;
+bool EosOscManager::madeManager = false;
 
 EosOscManager::EosOscManager() 
 {
     //setUser(255);
 }
 
-EosOscManager::EosOscManager(byte theUser, WiFiClient &theClient) 
+void EosOscManager::setClient(WiFiClient &theClient)
 {
-    this->setUser(theUser);
-    client = theClient;
-    this->resetConnection();
+	client = theClient;
 }
+
+void EosOscManager::registerHandler(EosOscHandler *theHandler)
+//void EosOscManager::registerHandler(EosOscCommand * theHandler)
+{
+	if (handlerCount>= MAX_HANDLERS)
+		return; //should throw an error or return -1?
+	
+	handlers[handlerCount] = theHandler;
+	handlerCount++;
+}
+
 
 void EosOscManager::setUser(byte theUser)
 {
     user=theUser;
-    if (setHandler)
-      handler->userChanged();
-      
+    if (handlerCount>0)
+	{
+		for (byte i=0; i<handlerCount; i++)
+			handlers[i]->userChanged();
+
+	}
+	
 }
 
 byte EosOscManager::getUser()
@@ -34,18 +52,12 @@ void EosOscManager::routeOSC(OSCMessage &theMessage)
   //lcd.clear();
   if (!theMessage.hasError()) //if the OSC is OK then act on it
   {
-    //route any that include the user
-    //Serial.print(handler);
-    if (setHandler)
-    { 
-       handler->routeOsc(theMessage);
-    } 
-    
-    theMessage.route(String(F("/eos/out/active/chan")).c_str(), routeChannel);
-    theMessage.route(String(F("/eos/out/active/chan")).c_str(), this->routeScreenNeedsUpdate);
-
-    //theMessage.route(String(F("/eos/out/cmd")).c_str(), routeCmd);
-    theMessage.route(String(F("/eos/out/cmd")).c_str(), this->routeScreenNeedsUpdate);
+	
+    if (handlerCount>0)
+    {
+		for (byte i=0; i<handlerCount; i++)
+			handlers[i]->routeOsc(theMessage);
+    }
 
 
   } else
@@ -133,9 +145,9 @@ void EosOscManager::checkForIncomingTCP()
     if (!rMsg.hasError()) 
     { //is valid OSC
       //send out via SLIP
-      delay(10);
-      yield();
-      this->routeOSC(rMsg);
+      delay(10); //this appears necessary!!
+		yield();
+		this->routeOSC(rMsg);
       //delay(1);
     } else
     {
@@ -143,6 +155,8 @@ void EosOscManager::checkForIncomingTCP()
     }
 
     rMsg.empty();
+	  
+	yield();
 
   } else {
     client.flush();//*/
@@ -178,38 +192,22 @@ void EosOscManager::resetConnection()
     //TODO should we transmit the current user so we remember what we are listening for?
 }
 
-void EosOscManager::registerHandler(EosOscHandler *theHandler)
-//void EosOscManager::registerHandler(EosOscCommand * theHandler)
-{
-  handler = theHandler;
-  setHandler = true;
-}
-
-//ROUTINGS???
-
-void routeChannel(OSCMessage &msg, int addrOffSet) {
-  /// recieves eos/out/active/chan
-  // the info is in the description
-  //which is a String
-
-  //so get the description
-  byte descLength = msg.getDataLength(0);
-  char descC[descLength];
- // Serial.println("route channel");
-  msg.getString(0, channelInfo, 29);
-  //Serial.println(descC);
-
-}
 
 //call this each time we have any OSC that might affect the output
 void EosOscManager::routeScreenNeedsUpdate(OSCMessage &msg, int addrOffSet)
 {
   //todo need to implement a singleton object for oscManager
-    oscManager.setScreenNeedsUpdate(true);
-
+    EosOscManager::getInstance()->setScreenNeedsUpdate(true);
 }
 
 
+
+EosOscManager* EosOscManager::getInstance() {
+	if (!madeManager) EosOscManager(manager);
+	madeManager = true;
+	return &manager;
+	//return NULL;
+};
 
 
 

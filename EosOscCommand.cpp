@@ -1,11 +1,16 @@
-#include "EosOscCommand.h"
-#include "EosOscManager.h"
+#include <EosOscCommand.h>
+#include <EosOscManager.h>
+
+//initialize static variables
+
+char EosOscCommand::currentCmdLine[COMMAND_LINE_LENGTH+1]; //current command line
+
 
 //private - configure all of the messages
 
 void EosOscCommand::makeMessages()
 {
-  if (manager->getUser() == 255)
+  if (EosOscManager::getInstance()->getUser() == 255)
   { //no user
     strcpy(cmdMessage, "/eos/");
     strcpy(newCmdMessage, cmdMessage);
@@ -16,7 +21,7 @@ void EosOscCommand::makeMessages()
   { //use usernumber
     //strcpy(preMessage, );
     char userNum[3];
-    sprintf(userNum, "%i", manager->getUser());
+    sprintf(userNum, "%i", EosOscManager::getInstance()->getUser());
 
     strcpy(cmdMessage, "/eos/user/");
     strcat(cmdMessage, userNum);
@@ -38,11 +43,6 @@ void EosOscCommand::makeMessages()
 
 EosOscCommand::EosOscCommand()
 {
-
-}
-EosOscCommand::EosOscCommand(EosOscManager * theManager)
-{
-  manager = theManager;
  // manager->registerHandler(this);
   makeMessages();
 }
@@ -57,7 +57,7 @@ void EosOscCommand::sendCommand(const char * cmd)
   OSCMessage msg(cmdMessage);
   msg.add(cmd);
 
-  manager->sendOSCMessage(msg);
+  EosOscManager::getInstance()->sendOSCMessage(msg);
 }
 void EosOscCommand::sendNewCommand(const char *cmd)
 {
@@ -65,7 +65,7 @@ void EosOscCommand::sendNewCommand(const char *cmd)
   if (strlen(cmd) > 0)
     msg.add(cmd);
 
-  manager->sendOSCMessage(msg);
+  EosOscManager::getInstance()->sendOSCMessage(msg);
 }
 void EosOscCommand::sendKey(const char *key)
 {
@@ -78,28 +78,35 @@ void EosOscCommand::sendKey(const char *key)
 
   OSCMessage msg(buffer);
 
-  manager->sendOSCMessage(msg);
+  EosOscManager::getInstance()->sendOSCMessage(msg);
 }
 
 void EosOscCommand::routeOsc(OSCMessage &message)
 {
-  message.route(msgInMessage, routeCmd);
-  message.route(msgInMessage, manager->routeScreenNeedsUpdate);
+  message.route(msgInMessage, this->routeCmd);
+  message.route(msgInMessage, EosOscManager::getInstance()->routeScreenNeedsUpdate);
 
 }
 
-void routeCmd(OSCMessage &msg, int addrOffset) {
+void EosOscCommand::writeCommandLine(Stream &print)
+{
+	print.print(EosOscCommand::currentCmdLine);
+}
+
+void EosOscCommand::routeCmd(OSCMessage &msg, int addrOffset) {
   //Serial.println("route command");
   int length = msg.getDataLength(0);
 
   char cmdLine[length];
   msg.getString(0, cmdLine, length);
 
-  String str = String(cmdLine);
-  if (length > 29)
-    str = str.substring(length - 29);
-
-  str.toCharArray(commandInfo, 29);
-
+  if (length > COMMAND_LINE_LENGTH +1) //extra byte for the /0
+  {
+	  memcpy(EosOscCommand::currentCmdLine, cmdLine +(length - COMMAND_LINE_LENGTH+1), COMMAND_LINE_LENGTH+1);
+	  
+  } else
+  {
+	  strcpy(EosOscCommand::currentCmdLine, cmdLine);
+  }
 }
 
