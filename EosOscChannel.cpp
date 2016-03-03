@@ -5,6 +5,9 @@
 
 char EosOscChannel::channelDisplayLine[CHANNEL_DISPLAY_LENGTH+1]; //current command line
 
+EosOscChannel EosOscChannel::singleton;
+bool EosOscChannel::madeSingleton = false;
+
 EosOscChannel::EosOscChannel()
 {
  // manager->registerHandler(this);
@@ -48,4 +51,14 @@ void EosOscChannel::routeCmd(OSCMessage &msg, int addrOffSet) {
 	//Serial.println(descC);
 	
 }
+
+
+
+EosOscChannel* EosOscChannel::getInstance() {
+	if (!madeSingleton) EosOscChannel(singleton);
+	madeSingleton = true;
+	return &singleton;
+	//return NULL;
+};
+
 

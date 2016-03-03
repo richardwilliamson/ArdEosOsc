@@ -10,10 +10,10 @@ class EosOscChannel : public EosOscHandler
 {
 private:
 
-
 public:
-    EosOscChannel();
-	
+	static EosOscChannel singleton;
+	static bool madeSingleton;
+	EosOscChannel(); //ideally hidden so can only get singleton
 	void writeCommandLine(Stream &print);
 
     virtual void userChanged();
@@ -22,6 +22,13 @@ public:
 
 	static char channelDisplayLine[CHANNEL_DISPLAY_LENGTH+1]; //current command line
 	static void routeCmd(OSCMessage &msg, int addrOffSet);
+	
+	static EosOscChannel * getInstance();
+	/*
+	{
+		static EosOscChannel singleton;
+		return &singleton;
+	}*/
 
    
 };
