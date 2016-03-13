@@ -106,6 +106,7 @@ void EosOscManager::checkForIncomingTCP()
   if (!client.connected())
   {
     Serial.print("not connected");
+	delay(500);
     return;
   }
     
