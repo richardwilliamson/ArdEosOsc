@@ -10,7 +10,7 @@ char EosOscCommand::currentCmdLine[COMMAND_LINE_LENGTH+1]; //current command lin
 
 void EosOscCommand::makeMessages()
 {
-  if (EosOscManager::getInstance()->getUser() == 255)
+  if (EosOscManager::getInstance()->getUser() == 255 || EosOscManager::getInstance()->getUser() ==0)
   { //no user
     strcpy(cmdMessage, "/eos/");
     strcpy(newCmdMessage, cmdMessage);
@@ -53,10 +53,11 @@ void EosOscCommand::userChanged()
 }
 
 void EosOscCommand::sendCommand(const char * cmd)
-{  
+{
+  
   OSCMessage msg(cmdMessage);
   msg.add(cmd);
-
+  
   EosOscManager::getInstance()->sendOSCMessage(msg);
 }
 void EosOscCommand::sendNewCommand(const char *cmd)
